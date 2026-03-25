@@ -1,28 +1,28 @@
-# BEES Data Engineering Case - Brewery Pipeline 🍻
+# 🍻 Brewery Data Pipeline - BEES Engineering Case
  
-## 🎯 Objetivo
-[cite_start]Este projeto implementa um pipeline de dados robusto utilizando a **Arquitetura Medallion** para consumir, transformar e agregar dados da [Open Brewery DB API](https://www.openbrewerydb.org/)[cite: 3, 5].
+Este repositório contém a solução para o case técnico de Engenharia de Dados da BEES. O objetivo é consumir dados da API Open Brewery DB e estruturá-los num Data Lake seguindo a arquitetura Medallion.
  
-## 🏗️ Arquitetura e Design
-[cite_start]A solução foi construída utilizando **PySpark** no ecossistema **Databricks**, garantindo escalabilidade horizontal e resiliência[cite: 8, 9].
+## 🚀 Arquitetura da Solução
+A solução foi desenvolvida utilizando **PySpark** no **Databricks**, aproveitando as vantagens do formato **Delta Lake**.
  
-### Camadas do Data Lake (Medallion):
-1.  [cite_start]**Bronze (Raw):** Ingestão dos dados em seu formato nativo (JSON convertido para Delta) com adição de metadados de auditoria (`extraction_at`, `source_system`)[cite: 11, 12].
-2.  **Silver (Curated):** Limpeza, tipagem (Casting) e tratamento de nulos. [cite_start]Os dados são persistidos no formato **Delta** e **particionados por localização (State)** para otimização de consultas regionais (Data Skipping)[cite: 13, 14].
-3.  [cite_start]**Gold (Analytical):** Visão agregada que reporta a quantidade de cervejarias por tipo e localização, pronta para consumo por ferramentas de BI[cite: 15].
+### Camadas (Medallion Architecture):
+1.  **Bronze (Raw):** Ingestão direta da API. O dado é persistido em formato Delta mantendo a fidelidade à origem, acrescido de metadados (`ingestion_timestamp` e `source_file`) para rastreabilidade.
+2.  **Silver (Clean/Curated):** - **Transformações:** Limpeza de esquemas, conversão de tipos (coordenadas para float) e remoção de registos sem ID (Data Quality).
+    - **Particionamento:** Os dados foram **particionados por `state` e `city`**. Esta escolha de design visa otimizar a performance de consultas analíticas regionais (Data Skipping).
+3.  **Gold (Analytical):** Criação de uma tabela agregada que consolida a quantidade de cervejarias por tipo e localização, pronta para consumo por ferramentas de BI.
  
-## 🛠️ Decisões Técnicas & Trade-offs
-- **Delta Lake:** Escolhido em vez de Parquet comum para garantir transações ACID, versionamento de dados (Time Travel) e evolução de schema simplificada.
-- **Particionamento:** A escolha do campo `state` na camada Silver visa performance. [cite_start]Em cenários de Big Data, o particionamento reduz drasticamente o custo de I/O[cite: 13, 26].
-- [cite_start]**Idempotência:** O pipeline foi desenhado para ser re-executável sem gerar duplicidade (usando o modo `overwrite` e tratamento de IDs únicos)[cite: 29].
+## 🛠️ Decisões de Design & Trade-offs
+- **Porquê PySpark?** Em vez de bibliotecas como Pandas, o PySpark permite processamento distribuído. Para um Engenheiro Sénior, a solução deve ser escalável para milhões de registos sem alteração de código.
+- **Delta Lake vs Parquet:** O Delta foi escolhido por suportar transações ACID (evitando corrupção de dados em escritas interrompidas) e *Time Travel* (auditoria de versões anteriores).
+- **Idempotência:** Todo o pipeline é idempotente. Se for executado novamente para o mesmo período, o resultado final será consistente, sem duplicados.
  
-## 🚦 Monitoramento e Alerta
-[cite_start]Para um ambiente de produção, a estratégia proposta inclui[cite: 16]:
-- [cite_start]**Data Quality:** Implementação de testes de expectativa (como Great Expectations) para validar se campos críticos (ID, Type) não possuem nulos após a camada Silver[cite: 17].
-- [cite_start]**Observabilidade:** Uso de **Databricks Workflows** com alertas configurados via Webhook para falhas no job ou latência acima do esperado[cite: 7].
-- [cite_start]**Retries:** Configuração de até 3 tentativas automáticas com backoff exponencial para lidar com instabilidades momentâneas da API de origem[cite: 7].
+## 🚦 Monitorização e Alerta (Item 6 do Case)
+Num ambiente produtivo, a estratégia de monitorização baseia-se em:
+1.  **Data Quality Checks:** Implementação de verificações entre as camadas (ex: se `count` na Bronze == `count` na Silver).
+2.  **Pipeline Failure:** Uso do **Databricks Workflows** com alertas via Email/Slack. Se a API estiver offline, o sistema está configurado com 3 retries (backoff exponencial).
+3.  **Audit Logs:** Registo de volumetria em cada carga para detetar anomalias (ex: queda repentina no número de cervejarias retornadas pela API).
  
-## 🚀 Como Executar
-1. Importe os notebooks da pasta `/scripts` para seu Workspace Databricks.
-2. [cite_start]Configure um cluster com **Runtime 13.3 LTS** ou superior[cite: 10].
-3. Execute os notebooks na ordem: `01_Bronze`, `02_Silver`, `03_Gold`.
+## 📦 Como Executar
+1. Importar os notebooks da pasta `/notebooks` para o Workspace do Databricks.
+2. Configurar um cluster com **Runtime 13.3 LTS**.
+3. Executar o fluxo: `01_Bronze` -> `02_Silver` -> `03_Gold`.
