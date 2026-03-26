@@ -8,6 +8,26 @@ A solução contempla ingestão de dados via API, processamento incremental e or
 
 ---
 
+## 🏗️ Estrutura do Projeto
+O projeto segue a **Arquitetura Medallion** utilizando **PySpark** e **Delta Lake**:
+ 
+- **Bronze:** Ingestão dos dados brutos com metadados de auditoria.
+- **Silver:** Limpeza, tipagem e **particionamento por estado** (otimização de I/O).
+- **Gold:** Agregação final por tipo e localização para consumo analítico.
+ 
+## 🛠️ Requisitos Técnicos
+- **Escalabilidade:** Processamento distribuído com Spark.
+- **Resiliência:** Tratamento de erros de API e idempotência nas cargas.
+- **Performance:** Uso de particionamento e formato Delta para Data Skipping.
+ 
+## 🚦 Monitoramento
+Estratégia de observabilidade baseada em:
+- Logs de execução em cada camada.
+- Alertas de falha via Databricks Workflows.
+- Retries automáticos para instabilidades de rede na extração da API.
+
+---
+
 ## 🧱 Arquitetura
 
 API (Open Brewery DB)
