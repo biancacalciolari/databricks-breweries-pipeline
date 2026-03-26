@@ -1,43 +1,56 @@
 # Databricks notebook source
 # DBTITLE 1,Cell 1
-#CONFIGURAÇÃO
-from pyspark.sql.functions import col, when, lower
+from pyspark.sql.functions import col, coalesce
 
-# 1. Definição dos caminhos - usando Unity Catalog
 BRONZE_TABLE = "breweries_catalog.bronze.breweries_bronze"
-SILVER_TABLE = "breweries_catalog.silver.breweries_partitioned"
+SILVER_TABLE = "breweries_catalog.silver.breweries_silver"
 
-def transform_bronze_to_silver():
-    # Lendo os dados da camada Bronze
-    df_bronze = spark.read.table(BRONZE_TABLE)
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS {SILVER_TABLE} (
+    id STRING,
+    name STRING,
+    brewery_type STRING,
+    street STRING,
+    city STRING,
+    state STRING,
+    postal_code STRING,
+    country STRING,
+    longitude FLOAT,
+    latitude FLOAT,
+    ingestion_timestamp TIMESTAMP,
+    source_system STRING
+)
+USING DELTA
+PARTITIONED BY (country, state)
+""")
 
-    # 2. Transformações de Qualidade e Padronização [cite: 13, 14]
-    # - Cast de tipos para garantir integridade (ex: coordenadas como float)
-    # - Padronização de strings para evitar duplicidade por 'Case Sensitive'
-    df_silver = df_bronze.select(
-        col("id").cast("string"),
-        col("name").cast("string"),
-        col("brewery_type").cast("string"),
-        col("street").cast("string"),
-        col("city").cast("string"),
-        # Algumas versões da API usam 'state', outras 'state_province'
-        # Aqui garantimos que pegamos a coluna correta
-        col("state_province").alias("state"), 
-        col("postal_code").cast("string"),
-        col("country").cast("string"),
-        col("longitude").cast("float"),
-        col("latitude").cast("float")
-    ).filter(col("id").isNotNull()) # Data Quality: Removendo registros sem ID
+df_bronze = spark.read.table(BRONZE_TABLE)
 
-    # 3. Escrita com Particionamento 
-    # O case pede explicitamente o particionamento por localização.
-    # Escolhi 'state' (e opcionalmente 'city') para otimizar filtros regionais.
-    df_silver.write.format("delta") \
-        .mode("overwrite") \
-        .partitionBy("state") \
-        .saveAsTable(SILVER_TABLE)
+df_silver = (
+    df_bronze.select(
+        col("id").cast("string").alias("id"),
+        col("name").cast("string").alias("name"),
+        col("brewery_type").cast("string").alias("brewery_type"),
+        col("street").cast("string").alias("street"),
+        col("city").cast("string").alias("city"),
+        coalesce(col("state"), col("state_province")).cast("string").alias("state"),
+        col("postal_code").cast("string").alias("postal_code"),
+        col("country").cast("string").alias("country"),
+        col("longitude").cast("float").alias("longitude"),
+        col("latitude").cast("float").alias("latitude"),
+        col("ingestion_timestamp"),
+        col("source_system")
+    )
+    .filter(col("id").isNotNull())
+    .filter(col("country").isNotNull())
+)
 
-    print(f"Camada Silver atualizada com sucesso e particionada por Estado.")
+df_silver.createOrReplaceTempView("vw_breweries_silver_stage")
 
-# Executa a transformação
-transform_bronze_to_silver()
+spark.sql(f"""
+MERGE INTO {SILVER_TABLE} AS target
+USING vw_breweries_silver_stage AS source
+ON target.id = source.id
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *
+""")
