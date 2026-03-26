@@ -103,8 +103,9 @@ O pipeline pode ser executado de duas formas:
 Também foi criada uma orquestração no Databricks Workflows, com execução sequencial:
 Bronze → Silver → Gold
 
-As evidências estão disponíveis na pasta `docs/evidencias/`.
+## ✅ Evidências de execução
 
+As evidências de execução do pipeline, incluindo workflow no Databricks, execução das camadas Bronze, Silver e Gold e validação do resultado final, estão disponíveis em [`docs/evidencias`](docs/evidencias).
 ---
 
 ## 🧪 Data Quality
