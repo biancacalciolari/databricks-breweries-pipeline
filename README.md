@@ -103,6 +103,15 @@ breweries_catalog.gold
 
 ---
 
+## 📄 Documentação
+
+- Arquitetura → docs/architecture.md  
+- Explicação → docs/explanation.md  
+- Orquestração → docs/orchestration.md  
+- Monitoramento → docs/monitoring.md
+
+--- 
+
 ## 🧠 Decisões Técnicas
 
 - Uso de MERGE para processamento incremental
