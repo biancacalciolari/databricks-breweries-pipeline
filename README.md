@@ -90,11 +90,20 @@ COUNT(*) AS total_breweries
 
 ---
 
-## 🔄 Execução
+## ▶️ Execução
 
-1. Executar notebook Bronze (ingestão API)
-2. Executar Silver (transformação + MERGE)
-3. Executar Gold (agregação)
+O pipeline pode ser executado de duas formas:
+
+### Execução manual
+1. Executar notebook Bronze
+2. Executar notebook Silver
+3. Executar notebook Gold
+
+### Execução orquestrada
+Também foi criada uma orquestração no Databricks Workflows, com execução sequencial:
+Bronze → Silver → Gold
+
+As evidências estão disponíveis na pasta `docs/evidencias/`.
 
 ---
 
@@ -129,6 +138,8 @@ breweries_catalog.gold
 - Explicação → docs/explanation.md  
 - Orquestração → docs/orchestration.md  
 - Monitoramento → docs/monitoring.md
+- Evidência de execução → docs/evidencias/Evidencia_pipeline.png
+- Evidência de dados → docs/evidencias/Evidencia_Dados.png
 
 --- 
 
